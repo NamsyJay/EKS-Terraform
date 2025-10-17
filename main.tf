@@ -2,18 +2,18 @@ provider "aws" {
   region = "eu-west-2"
 }
 
-resource "aws_vpc" "DefaultVPC" {
+resource "aws_vpc" "lancash_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "DefaultVPC"
+    Name = "lancash_vpc"
   }
 }
 
 resource "aws_subnet" "lancash_subnet" {
   count = 2
-  vpc_id                  = aws_vpc.DefaultVPC.id
-  cidr_block              = cidrsubnet(aws_vpc.DefaultVPC.cidr_block, 8, count.index)
+  vpc_id                  = aws_vpc.lancash_vpc.id
+  cidr_block              = cidrsubnet(aws_vpc.lancash_vpc.cidr_block, 8, count.index)
   availability_zone       = element(["eu-west-2a", "eu-west-2b"], count.index)
   map_public_ip_on_launch = true
 
@@ -23,7 +23,7 @@ resource "aws_subnet" "lancash_subnet" {
 }
 
 resource "aws_internet_gateway" "lancash_igw" {
-  vpc_id = aws_vpc.DefaultVPC.id
+  vpc_id = aws_vpc.lancash_vpc.id
 
   tags = {
     Name = "lancash-igw"
@@ -31,7 +31,7 @@ resource "aws_internet_gateway" "lancash_igw" {
 }
 
 resource "aws_route_table" "lancash_route_table" {
-  vpc_id = aws_vpc.DefaultVPC.id
+  vpc_id = aws_vpc.lancash_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -43,14 +43,15 @@ resource "aws_route_table" "lancash_route_table" {
   }
 }
 
-resource "aws_route_table_association" "a" {
+resource "aws_route_table_association" "lancash_assoc" {
   count          = 2
   subnet_id      = aws_subnet.lancash_subnet[count.index].id
   route_table_id = aws_route_table.lancash_route_table.id
 }
 
-resource "aws_security_group" "Container-SG" {
-  vpc_id = aws_vpc.DefaultVPC.id
+resource "aws_security_group" "container_sg" {
+  name   = "container-sg"
+  vpc_id = aws_vpc.lancash_vpc.id
 
   egress {
     from_port   = 0
@@ -60,12 +61,13 @@ resource "aws_security_group" "Container-SG" {
   }
 
   tags = {
-    Name = "Container-SG"
+    Name = "container-sg"
   }
 }
 
-resource "aws_security_group" "Master-SG" {
-  vpc_id = aws_vpc.DefaultVPC.id
+resource "aws_security_group" "master_sg" {
+  name   = "master-sg"
+  vpc_id = aws_vpc.lancash_vpc.id
 
   ingress {
     from_port   = 0
@@ -82,16 +84,16 @@ resource "aws_security_group" "Master-SG" {
   }
 
   tags = {
-    Name = "Container-SG"
+    Name = "master-sg"
   }
 }
 
 resource "aws_eks_cluster" "lancash" {
   name     = "lancash"
-  role_arn = aws_iam_role.lancash_cluster_role.arn
+  role_arn = aws_iam_role.lancash.arn
 
-  vpc_config {
-    subnet_ids         = aws_subnet.devopsshack_subnet[*].id
+ vpc_config {
+    subnet_ids         = aws_subnet.lancash_subnet[*].id
     security_group_ids = [aws_security_group.Container-SG.id]
   }
 }
@@ -103,16 +105,16 @@ resource "aws_eks_node_group" "lancash" {
   subnet_ids      = aws_subnet.lancash_subnet[*].id
 
   scaling_config {
-    desired_size = 3
+    desired_size = 2
     max_size     = 3
-    min_size     = 3
+    min_size     = 1
   }
 
-  instance_types = ["t2.medium"]
+  instance_types = ["t3.medium"]
 
   remote_access {
-    ec2_ssh_key = var.ssh_key_name
-    source_security_group_ids = [aws_security_group.devopsshack_node_sg.id]
+    ec2_ssh_key               = var.ssh_key_name
+    source_security_group_ids = [aws_security_group.master_sg.id]
   }
 }
 
@@ -137,7 +139,7 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "lancash_cluster_role_policy" {
-  role       = aws_iam_role.lancash_cluster_role.name
+  role       = aws_iam_role.lancash.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
