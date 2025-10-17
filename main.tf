@@ -64,7 +64,7 @@ resource "aws_security_group" "Container-SG" {
   }
 }
 
-resource "aws_security_group" "Container-SG" {
+resource "aws_security_group" "Master-SG" {
   vpc_id = aws_vpc.DefaultVPC.id
 
   ingress {
