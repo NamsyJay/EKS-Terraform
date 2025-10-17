@@ -1,56 +1,56 @@
 provider "aws" {
-  region = "ap-south-1"
+  region = "eu-west-2"
 }
 
-resource "aws_vpc" "devopsshack_vpc" {
+resource "aws_vpc" "DefaultVPC" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "devopsshack-vpc"
+    Name = "DefaultVPC"
   }
 }
 
-resource "aws_subnet" "devopsshack_subnet" {
+resource "aws_subnet" "lancash_subnet" {
   count = 2
-  vpc_id                  = aws_vpc.devopsshack_vpc.id
-  cidr_block              = cidrsubnet(aws_vpc.devopsshack_vpc.cidr_block, 8, count.index)
-  availability_zone       = element(["ap-south-1a", "ap-south-1b"], count.index)
+  vpc_id                  = aws_vpc.DefaultVPC.id
+  cidr_block              = cidrsubnet(aws_vpc.DefaultVPC.cidr_block, 8, count.index)
+  availability_zone       = element(["eu-west-2a", "eu-west-2b"], count.index)
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "devopsshack-subnet-${count.index}"
+    Name = "lancash-subnet-${count.index}"
   }
 }
 
-resource "aws_internet_gateway" "devopsshack_igw" {
-  vpc_id = aws_vpc.devopsshack_vpc.id
+resource "aws_internet_gateway" "lancash_igw" {
+  vpc_id = aws_vpc.DefaultVPC.id
 
   tags = {
-    Name = "devopsshack-igw"
+    Name = "lancash-igw"
   }
 }
 
-resource "aws_route_table" "devopsshack_route_table" {
-  vpc_id = aws_vpc.devopsshack_vpc.id
+resource "aws_route_table" "lancash_route_table" {
+  vpc_id = aws_vpc.DefaultVPC.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.devopsshack_igw.id
+    gateway_id = aws_internet_gateway.lancash_igw.id
   }
 
   tags = {
-    Name = "devopsshack-route-table"
+    Name = "lancash-route-table"
   }
 }
 
 resource "aws_route_table_association" "a" {
   count          = 2
-  subnet_id      = aws_subnet.devopsshack_subnet[count.index].id
-  route_table_id = aws_route_table.devopsshack_route_table.id
+  subnet_id      = aws_subnet.lancash_subnet[count.index].id
+  route_table_id = aws_route_table.lancash_route_table.id
 }
 
-resource "aws_security_group" "devopsshack_cluster_sg" {
-  vpc_id = aws_vpc.devopsshack_vpc.id
+resource "aws_security_group" "Container-SG" {
+  vpc_id = aws_vpc.DefaultVPC.id
 
   egress {
     from_port   = 0
@@ -60,12 +60,12 @@ resource "aws_security_group" "devopsshack_cluster_sg" {
   }
 
   tags = {
-    Name = "devopsshack-cluster-sg"
+    Name = "Container-SG"
   }
 }
 
-resource "aws_security_group" "devopsshack_node_sg" {
-  vpc_id = aws_vpc.devopsshack_vpc.id
+resource "aws_security_group" "Container-SG" {
+  vpc_id = aws_vpc.DefaultVPC.id
 
   ingress {
     from_port   = 0
@@ -82,12 +82,12 @@ resource "aws_security_group" "devopsshack_node_sg" {
   }
 
   tags = {
-    Name = "devopsshack-node-sg"
+    Name = "Container-SG"
   }
 }
 
-resource "aws_eks_cluster" "devopsshack" {
-  name     = "devopsshack-cluster"
+resource "aws_eks_cluster" "lancash" {
+  name     = "lancash-cluster"
   role_arn = aws_iam_role.devopsshack_cluster_role.arn
 
   vpc_config {
