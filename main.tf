@@ -87,20 +87,20 @@ resource "aws_security_group" "Container-SG" {
 }
 
 resource "aws_eks_cluster" "lancash" {
-  name     = "lancash-cluster"
-  role_arn = aws_iam_role.devopsshack_cluster_role.arn
+  name     = "lancash"
+  role_arn = aws_iam_role.lancash_cluster_role.arn
 
   vpc_config {
     subnet_ids         = aws_subnet.devopsshack_subnet[*].id
-    security_group_ids = [aws_security_group.devopsshack_cluster_sg.id]
+    security_group_ids = [aws_security_group.Container-SG.id]
   }
 }
 
-resource "aws_eks_node_group" "devopsshack" {
-  cluster_name    = aws_eks_cluster.devopsshack.name
-  node_group_name = "devopsshack-node-group"
-  node_role_arn   = aws_iam_role.devopsshack_node_group_role.arn
-  subnet_ids      = aws_subnet.devopsshack_subnet[*].id
+resource "aws_eks_node_group" "lancash" {
+  cluster_name    = aws_eks_cluster.lancash.name
+  node_group_name = "lancash-node-group"
+  node_role_arn   = aws_iam_role.lancash_node_group_role.arn
+  subnet_ids      = aws_subnet.lancash_subnet[*].id
 
   scaling_config {
     desired_size = 3
@@ -116,32 +116,33 @@ resource "aws_eks_node_group" "devopsshack" {
   }
 }
 
-resource "aws_iam_role" "devopsshack_cluster_role" {
-  name = "devopsshack-cluster-role"
+resource "aws_iam_role" "lancash" {
+  name = "lancash"
 
   assume_role_policy = <<EOF
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "eks.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::327902804526:root"
+            },
+            "Action": "sts:AssumeRole",
+            "Condition": {}
+        }
+    ]
 }
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "devopsshack_cluster_role_policy" {
-  role       = aws_iam_role.devopsshack_cluster_role.name
+resource "aws_iam_role_policy_attachment" "lancash_cluster_role_policy" {
+  role       = aws_iam_role.lancash_cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-resource "aws_iam_role" "devopsshack_node_group_role" {
-  name = "devopsshack-node-group-role"
+resource "aws_iam_role" "lancash_node_group_role" {
+  name = "lancash-node-group-role"
 
   assume_role_policy = <<EOF
 {
@@ -159,17 +160,17 @@ resource "aws_iam_role" "devopsshack_node_group_role" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "devopsshack_node_group_role_policy" {
-  role       = aws_iam_role.devopsshack_node_group_role.name
+resource "aws_iam_role_policy_attachment" "lancash_node_group_role_policy" {
+  role       = aws_iam_role.lancash_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
-resource "aws_iam_role_policy_attachment" "devopsshack_node_group_cni_policy" {
-  role       = aws_iam_role.devopsshack_node_group_role.name
+resource "aws_iam_role_policy_attachment" "lancash_node_group_cni_policy" {
+  role       = aws_iam_role.lancash_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
-resource "aws_iam_role_policy_attachment" "devopsshack_node_group_registry_policy" {
-  role       = aws_iam_role.devopsshack_node_group_role.name
+resource "aws_iam_role_policy_attachment" "lancash_node_group_registry_policy" {
+  role       = aws_iam_role.lancash_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
