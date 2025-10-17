@@ -1,5 +1,5 @@
-output "cluster_id" {
-  value = aws_eks_cluster.lancash.id
+output "eks_cluster_name" {
+  value = aws_eks_cluster.lancash.name
 }
 
 output "node_group_id" {
@@ -7,7 +7,7 @@ output "node_group_id" {
 }
 
 output "vpc_id" {
-  value = aws_vpc.DefaultVPC_vpc.id
+  value = aws_vpc.lancash_vpc.id
 }
 
 output "subnet_ids" {
